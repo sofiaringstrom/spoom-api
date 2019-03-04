@@ -4,6 +4,8 @@ import cors from 'cors';
 import querystring from 'querystring';
 import cookieParser from 'cookie-parser';
 
+const io = require('socket.io')();
+
 require('dotenv').config();
 
 /**
@@ -25,6 +27,7 @@ var stateKey = 'spotify_auth_state';
 
 const app = express();
 const PORT = process.env.PORT;
+const SOCKET_PORT = process.env.SOCKET_PORT;
 const path = require('path');
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
@@ -79,4 +82,19 @@ app.get('/login', function(req, res) {
 
 app.get('/done',function(req,res) {
   res.sendFile(path.join(__dirname+'/done.html'));
+});
+
+io.listen(SOCKET_PORT);
+
+io.on('connection', (client) => {
+  // here you can start emitting events to the client 
+  console.log('connection io')
+
+  client.on('subscribeToTimer', (interval) => {
+    console.log('client is subscribing to timer with interval ', interval);
+
+    setInterval(() => {
+      client.emit('timer', 'test');
+    }, interval);
+  });
 });
