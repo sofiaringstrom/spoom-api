@@ -47,8 +47,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
   <script type="text/javascript">
-    var urlParams = new URLSearchParams(window.location.search);
-    var code = urlParams.get('code');
+    function getQueryStringValue (key) {  
+      return decodeURIComponent(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));  
+    }
+    var code = getQueryStringValue('code');
+
+    // save code in cookie
+    var now = new Date();
+    var time = now.getTime();
+    time += 3600 * 1000;
+    now.setTime(time);
+    document.cookie = 'swotify_code=' + code + '; expires=' + now.toUTCString() + '; path=/';
+
   </script>
 
 </body>

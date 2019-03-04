@@ -8,6 +8,8 @@ const io = require('socket.io')();
 
 require('dotenv').config();
 
+var token_requests = {};
+
 /**
  * Generates a random string containing numbers and letters
  * @param  {number} length The length of the string
@@ -84,17 +86,37 @@ app.get('/done',function(req,res) {
   res.sendFile(path.join(__dirname+'/done.html'));
 });
 
+app.post('/callback', function(req, res) {
+  console.log('callback')
+  var code = req.body.code;
+  var access_token = req.body.access_token;
+  token_requests[code] = access_token;
+  console.log(token_requests)
+});
+
 io.listen(SOCKET_PORT);
 
 io.on('connection', (client) => {
   // here you can start emitting events to the client 
-  console.log('connection io')
+  var socketInterval;
 
-  client.on('subscribeToTimer', (interval) => {
-    console.log('client is subscribing to timer with interval ', interval);
+  client.on('subscribeToCode', (code) => {
 
-    setInterval(() => {
-      client.emit('timer', 'test');
-    }, interval);
+    console.log('client is subscribing to code ', code);
+
+    socketInterval = setInterval(() => {
+      if (token_requests[code]) {
+
+        console.log('token valid')
+        clearInterval(socketInterval);
+        var access_token = token_requests[code]
+        delete token_requests[code]; 
+        client.emit('access_token', access_token);
+
+      } else {
+        console.log('no valid token found')
+      }
+    }, 1000);
+
   });
 });

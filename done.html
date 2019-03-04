@@ -29,9 +29,15 @@
 
     var access_token = getQueryStringValue('code');
 
-    console.log('access_token', access_token)
+    // get code from cookie
+    var cookieValue = document.cookie.replace(/(?:(?:^|.*;\s*)swotify_code\s*\=\s*([^;]*).*$)|^.*$/, "$1");
 
     // send access_token to api
+
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("POST", "http://localhost:7000/callback", true);
+    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhttp.send("code=" + cookieValue + "&access_token=" + access_token);
 
     // in api, send access_token to app (socket)
 
