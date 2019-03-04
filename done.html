@@ -22,5 +22,20 @@
   <!-- Compiled and minified JavaScript -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
+  <script type="text/javascript">
+    function getQueryStringValue (key) {  
+      return decodeURIComponent(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));  
+    }
+
+    var access_token = getQueryStringValue('code');
+
+    console.log('access_token', access_token)
+
+    // send access_token to api
+
+    // in api, send access_token to app (socket)
+
+  </script>
+
 </body>
 </html>
