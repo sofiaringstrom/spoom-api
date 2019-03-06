@@ -7,8 +7,6 @@ import request from 'request';
 import util from 'util';
 import cron from 'node-cron';
 
-const socketIO = require('socket.io');
-
 require('dotenv').config();
 
 var token_requests = {};
@@ -31,7 +29,10 @@ const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const SPOTIFY_REDIRECT_URL = process.env.SPOTIFY_REDIRECT_URL;
 const FRONTEND_URI = process.env.FRONTEND_URI;
 
-app.listen(PORT, () => {
+var http = require('http').Server(app);
+const io = require('socket.io')(http);
+
+http.listen(PORT, () => {
   console.log(`server running on port ${PORT}`)
 });
 
@@ -206,7 +207,6 @@ app.get('/api/v1/getPlayer', async (req, res) => {
   console.log(`socket running on port ${process.env.PORT || SOCKET_PORT}`)
 });*/
 
-const io = socketIO(app);
 
 io.on('connection', (client) => {
   console.log(' ')
