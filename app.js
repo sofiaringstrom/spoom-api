@@ -5,6 +5,7 @@ import querystring from 'querystring';
 import cookieParser from 'cookie-parser';
 import request from 'request';
 import util from 'util';
+import cron from 'node-cron';
 
 const io = require('socket.io')();
 
@@ -187,6 +188,7 @@ app.get('/api/v1/getUserData', async (req, res) => {
       var newResponse = JSON.parse(response.body)
       console.log(typeof newResponse)
       console.log(newResponse)
+      console.log('newAuthData', newAuthData)
       return res.status(200).send({
         data: newResponse,
         newAuthData: newAuthData
@@ -209,7 +211,6 @@ io.on('connection', (client) => {
   console.log(' ')
 
   // here you can start emitting events to the client 
-  var socketInterval;
 
   client.on('subscribeToCode', (code) => {
     console.log(' ')
@@ -221,7 +222,7 @@ io.on('connection', (client) => {
 
     token_requests[code] = {};
 
-    socketInterval = setInterval(() => {
+    var socketInterval = setInterval(() => {
       console.log('socket connection')
       console.log('token_requests', token_requests)
       console.log('Object.keys(token_requests[code]).length', Object.keys(token_requests[code]).length)
@@ -239,6 +240,15 @@ io.on('connection', (client) => {
     }, 1000);
 
   });
+});
+
+// empty code queue once a day at midnight
+cron.schedule('0 0 * * *', () => {
+  console.log(' ')
+  console.log(fgCron, 'Running cron job')
+  console.log(fgCron, '-------------------------------------------------------------------------------------------------------------------')
+  console.log(' ')
+  token_requests = {};
 });
 
 var checkToken = (createdAt) => {
@@ -268,9 +278,10 @@ var requestNewToken = async (refreshToken) => {
 
   var tokenRequest = util.promisify(request.post);
   var newToken = await tokenRequest(authOptions).catch((err) => {throw err});
+  var createdAt = Date.now();
 
   if (newToken) {
-    return {access_token: newToken.body['access_token']};
+    return {access_token: newToken.body['access_token'], createdAt: createdAt.toString()};
   }
 
 }
