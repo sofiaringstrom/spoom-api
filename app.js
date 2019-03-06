@@ -7,7 +7,7 @@ import request from 'request';
 import util from 'util';
 import cron from 'node-cron';
 
-const io = require('socket.io')();
+const socketIO = require('socket.io');
 
 require('dotenv').config();
 
@@ -202,9 +202,11 @@ app.get('/api/v1/getPlayer', async (req, res) => {
 
 })
 
-io.listen(process.env.PORT || SOCKET_PORT, () => {
+/*io.listen(process.env.PORT || SOCKET_PORT, () => {
   console.log(`socket running on port ${process.env.PORT || SOCKET_PORT}`)
-});
+});*/
+
+const io = socketIO(app);
 
 io.on('connection', (client) => {
   console.log(' ')
