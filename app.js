@@ -11,20 +11,12 @@ require('dotenv').config();
 
 var token_requests = {};
 
-/**
- * Generates a random string containing numbers and letters
- * @param  {number} length The length of the string
- * @return {string} The generated string
- */
-var generateRandomString = function(length) {
-  var text = '';
-  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-  for (var i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
-};
+const fgOK = '\x1b[36m%s\x1b[0m';
+const fgWarning = '\x1b[33m%s\x1b[0m';
+const fgError = '\x1b[31m%s\x1b[0m';
+const fgFunction = '\x1b[34m%s\x1b[0m';
+const fgRequest = '\x1b[37m%s\x1b[0m';
+const fgCron = '\x1b[35m%s\x1b[0m';
 
 var stateKey = 'spotify_auth_state';
 
@@ -53,7 +45,12 @@ app.use((req, res, next) => {
 })
 app.use(bodyParser.json());
 
-app.get('/',function(req,res) {
+app.get('/', (req,res) => {
+  console.log(' ')
+  console.log(fgRequest, 'Request GET /')
+  console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
+  console.log(' ')
+
   //console.log(req.query.code) code from app
 
   if (req.query.access_token) {
@@ -61,23 +58,19 @@ app.get('/',function(req,res) {
     // Authorized
     console.log('authorized')
 
-    let authOptionsSecond = {
-      url: 'https://api.spotify.com/v1/me',
-      headers: {
-        'Authorization': 'Bearer ' + req.query.access_token
-      }
-    }
-
-    request.get(authOptionsSecond, (error, response) => {
-      console.log(response)
-      return res.status(200).send({
-        data: response
-      })
-    })
-
   } else if (req.query.code) {
     // code is present
-    res.sendFile(path.join(__dirname+'/auth.html'));
+
+    // check if code is valid
+    if (token_requests[req.query.code]) {
+      res.sendFile(path.join(__dirname+'/auth.html'));
+    } else {
+      // code is not valid
+      return res.status(200).send({
+        status: 'failed',
+        message: 'code is not valid'
+      });
+    }
   } else {
     // code is not present, pls enter
     res.sendFile(path.join(__dirname+'/enter-code.html'));
@@ -85,7 +78,11 @@ app.get('/',function(req,res) {
 
 });
 
-app.get('/login', function(req, res) {
+app.get('/login', (req, res) => {
+  console.log(' ')
+  console.log(fgRequest, 'Request GET /login')
+  console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
+  console.log(' ')
 
   var state = generateRandomString(16);
   res.cookie(stateKey, state);
@@ -106,8 +103,11 @@ app.get('/done',function(req,res) {
   res.sendFile(path.join(__dirname+'/done.html'));
 });
 
-app.get('/callback', function(req, res) {
-  console.log('callback')
+app.get('/callback', (req, res) => {
+  console.log(' ')
+  console.log(fgRequest, 'Request GET /callback')
+  console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
+  console.log(' ')
   
   //var access_token = req.body.access_token;
 
@@ -134,94 +134,109 @@ app.get('/callback', function(req, res) {
     var refresh_token = body.refresh_token;
     let uri = process.env.FRONTEND_URI || 'http://localhost:7000'
 
+    // save createdAt to check if token is valid later
+    var createdAt = Date.now();
+
     // store tokens in app
     // then send tokens to api when requesting data from spotify
     var swotifyCode = req.cookies.swotify_code;
-    token_requests[swotifyCode] = {'access_token': access_token, 'refresh_token': refresh_token};
+    token_requests[swotifyCode] = {'access_token': access_token, 'refresh_token': refresh_token, 'createdAt': createdAt.toString()};
 
     return res.status(200).send({
       status: 'ok'
     });
-
-    //res.redirect(uri + '?access_token=' + access_token + '&refresh_token=' + refresh_token);
   })
 
-  /*request.post(authOptions, function(error, response, body) {
-    console.log(body)
-    var access_token = body.access_token;
-    var refresh_token = body.refresh_token;
-    console.log(access_token)
+});
 
-    newToken = refresh_token;
+app.get('/api/v1/getUserData', async (req, res) => {
+  console.log(' ')
+  console.log(fgRequest, 'Request GET /getUserData')
+  console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
+  console.log(' ')
 
-    token_requests[code] = {'access_token': access_token, 'refresh_token': refresh_token};
-    let uri = process.env.FRONTEND_URI || 'http://localhost:7000/callback';
-    res.redirect(uri + '?access_token=' + access_token)
-  })*/
+  // get access token, refresh token and datetime creaated
+  console.log(req.query)
 
+  var now = Date.now();
+  var createdAt = parseInt(req.query.createdAt);
+  var validAccessToken;
+  var newAuthData;
 
-  /*let authOptionsSecond = {
-    url: 'https://api.spotify.com/v1/me',
-    headers: {
-      'Authorization': 'Bearer ' + newToken
-    }
+  console.log(createdAt)
+
+  var diff = now - createdAt;
+  var timePassed = diff/60/1000;
+  console.log('timePassed', timePassed)
+
+  // check if 1h passed since datetime created
+  if (timePassed > 60) {
+    // token has expired, request new
+
+    // validAccessToken = new access_token
+    // newRefreshToken = new refresh_token
+    // newAuthData = await {access_token: validAccessToken, refresh_token: newRefreshToken}
+
+  } else {
+    // token is valid
+
+    // use access token
+    // validAccessToken = access_token
+    newAuthData = {access_token: req.query.access_token, refresh_token: req.query.refresh_token}
   }
 
-  console.log(newToken)
+  // do request
+  if (newAuthData) {
+    let authOptions = {
+      url: 'https://api.spotify.com/v1/me',
+      headers: {
+        'Authorization': 'Bearer ' + newAuthData.access_token
+      }
+    }
 
-  request.get(authOptionsSecond, (error, response) => {
-    console.log(response)
-  })*/
-
-  /*let authOptions = {
-    url: 'https://accounts.spotify.com/api/token',
-    form: {
-      code: access_token,
-      redirect_uri: SPOTIFY_REDIRECT_URL,
-      grant_type: 'authorization_code'
-    },
-    headers: {
-      Accept: 'application/x-www-form-urlencoded',
-      'Authorization': 'Basic ' + (new Buffer.from(
-        process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
-      ).toString('base64'))
-    },
-    json: true
-  }*/
-  /*request.post(authOptions, function(error, response, body) {
-    console.log(body)
-    var access_token = body.access_token;
-    var refresh_token = body.refresh_token;
-    console.log(access_token)
-
-    token_requests[code] = {'access_token': access_token, 'refresh_token': refresh_token};
-    /*let uri = process.env.FRONTEND_URI || 'http://localhost:7000'
-    res.redirect(uri + '?access_token=' + access_token)*/
-  //})
-
-  // från nytt anrop
-  /*token_requests[code] = access_token;
-  console.log(token_requests)*/
+    request.get(authOptions, (error, response) =>  {
+      var newResponse = JSON.parse(response.body)
+      console.log(typeof newResponse)
+      console.log(newResponse)
+      return res.status(200).send({
+        data: newResponse,
+        newAuthData: newAuthData
+      })
+    })
+  }
 
   /*return res.status(200).send({
     status: 'ok'
-  })*/
+  });*/
+
 });
 
 io.listen(SOCKET_PORT);
 
 io.on('connection', (client) => {
+  console.log(' ')
+  console.log(fgRequest, 'io socket -> on connection')
+  console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
+  console.log(' ')
+
   // here you can start emitting events to the client 
   var socketInterval;
 
   client.on('subscribeToCode', (code) => {
+    console.log(' ')
+    console.log(fgRequest, 'io socket -> on connection -> subscribeToCode')
+    console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
+    console.log(' ')
 
     console.log('client is subscribing to code ', code);
+
+    token_requests[code] = {};
 
     socketInterval = setInterval(() => {
       console.log('socket connection')
       console.log('token_requests', token_requests)
-      if (token_requests[code]) {
+      console.log('Object.keys(token_requests[code]).length', Object.keys(token_requests[code]).length)
+      if (Object.keys(token_requests[code]).length) {
 
         console.log('token valid')
         clearInterval(socketInterval);
@@ -236,3 +251,18 @@ io.on('connection', (client) => {
 
   });
 });
+
+/**
+ * Generates a random string containing numbers and letters
+ * @param  {number} length The length of the string
+ * @return {string} The generated string
+ */
+var generateRandomString = (length) => {
+  var text = '';
+  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+  for (var i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+};
