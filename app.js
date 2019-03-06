@@ -3,8 +3,9 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import querystring from 'querystring';
 import cookieParser from 'cookie-parser';
+import request from 'request';
+import util from 'util';
 
-let request = require('request')
 const io = require('socket.io')();
 
 require('dotenv').config();
@@ -156,33 +157,21 @@ app.get('/api/v1/getUserData', async (req, res) => {
   console.log(' ')
 
   // get access token, refresh token and datetime creaated
-  console.log(req.query)
+  //console.log(req.query)
 
-  var now = Date.now();
+  
   var createdAt = parseInt(req.query.createdAt);
-  var validAccessToken;
+  var timePassed = checkToken(createdAt);
   var newAuthData;
-
-  console.log(createdAt)
-
-  var diff = now - createdAt;
-  var timePassed = diff/60/1000;
-  console.log('timePassed', timePassed)
 
   // check if 1h passed since datetime created
   if (timePassed > 60) {
     // token has expired, request new
-
-    // validAccessToken = new access_token
-    // newRefreshToken = new refresh_token
-    // newAuthData = await {access_token: validAccessToken, refresh_token: newRefreshToken}
-
+    var newTokenRequest = util.promisify(requestNewToken);
+    newAuthData = await requestNewToken(req.query.refresh_token);
   } else {
     // token is valid
-
-    // use access token
-    // validAccessToken = access_token
-    newAuthData = {access_token: req.query.access_token, refresh_token: req.query.refresh_token}
+    newAuthData = {access_token: req.query.access_token}
   }
 
   // do request
@@ -205,11 +194,11 @@ app.get('/api/v1/getUserData', async (req, res) => {
     })
   }
 
-  /*return res.status(200).send({
-    status: 'ok'
-  });*/
-
 });
+
+app.get('/api/v1/getPlayer', async (req, res) => {
+
+})
 
 io.listen(SOCKET_PORT);
 
@@ -251,6 +240,40 @@ io.on('connection', (client) => {
 
   });
 });
+
+var checkToken = (createdAt) => {
+  console.log(createdAt)
+  var now = Date.now();
+
+  var diff = now - createdAt;
+  var timePassed = diff/60/1000;
+  console.log('timePassed', timePassed)
+  return timePassed;
+}
+
+var requestNewToken = async (refreshToken) => {
+  let authOptions = {
+    url: 'https://accounts.spotify.com/api/token',
+    form: {
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token'
+    },
+    headers: {
+      'Authorization': 'Basic ' + (new Buffer.from(
+        SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET
+      ).toString('base64'))
+    },
+    json: true
+  }
+
+  var tokenRequest = util.promisify(request.post);
+  var newToken = await tokenRequest(authOptions).catch((err) => {throw err});
+
+  if (newToken) {
+    return {access_token: newToken.body['access_token']};
+  }
+
+}
 
 /**
  * Generates a random string containing numbers and letters
