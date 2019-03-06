@@ -202,8 +202,8 @@ app.get('/api/v1/getPlayer', async (req, res) => {
 
 })
 
-io.listen(SOCKET_PORT, () => {
-  console.log(`socket running on port ${SOCKET_PORT}`)
+io.listen(process.env.PORT || SOCKET_PORT, () => {
+  console.log(`socket running on port ${process.env.PORT || SOCKET_PORT}`)
 });
 
 io.on('connection', (client) => {
