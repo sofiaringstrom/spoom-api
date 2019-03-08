@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser';
 import request from 'request';
 import util from 'util';
 import cron from 'node-cron';
+import socketio from 'socket.io';
+import connectSocket from './socket';
 
 require('dotenv').config();
 
@@ -30,15 +32,22 @@ const SPOTIFY_REDIRECT_URL = process.env.SPOTIFY_REDIRECT_URL;
 const FRONTEND_URI = process.env.FRONTEND_URI;
 
 var http = require('http').Server(app);
-const io = require('socket.io')(http);
 
 http.listen(PORT, () => {
   console.log(`server running on port ${PORT}`)
 });
 
+const io = require('socket.io')(http);
+/*const io = socketio(http);
+io.on('connection', connectSocket);*/
+
+io.of('connect').on('connection', connectSocket);
+
 app.use(express.static(__dirname + '/public'))
    .use(cors())
    .use(cookieParser());
+
+app.use("/stylesheet",express.static(__dirname + "/stylesheet"));
 
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use((req, res, next) => {
@@ -69,10 +78,13 @@ app.get('/', (req,res) => {
       res.sendFile(path.join(__dirname+'/auth.html'));
     } else {
       // code is not valid
-      return res.status(200).send({
+        
+      res.sendFile(path.join(__dirname+'/auth.html'));
+
+      /*return res.status(200).send({
         status: 'failed',
         message: 'code is not valid'
-      });
+      });*/
     }
   } else {
     // code is not present, pls enter
@@ -91,7 +103,7 @@ app.get('/login', (req, res) => {
   res.cookie(stateKey, state);
 
   // your application requests authorization
-  var scope = 'user-read-private playlist-read-private user-read-email';
+  var scope = 'user-read-private playlist-read-private user-read-email user-read-playback-state user-modify-playback-state user-read-currently-playing user-modify-playback-state';
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       client_id: SPOTIFY_CLIENT_ID,
@@ -148,7 +160,11 @@ app.get('/callback', (req, res) => {
     return res.status(200).send({
       status: 'ok'
     });
-  })
+  }).on('error', (err) => {
+    return res.status(200).send({
+      status: 'failed'
+    });
+  });
 
 });
 
@@ -159,40 +175,31 @@ app.get('/api/v1/getUserData', async (req, res) => {
   console.log(' ')
 
   // get access token, refresh token and datetime creaated
-  //console.log(req.query)
-
-  
   var createdAt = parseInt(req.query.createdAt);
   var timePassed = checkToken(createdAt);
-  var newAuthData;
+  var authData;
 
-  // check if 1h passed since datetime created
-  if (timePassed > 60) {
-    // token has expired, request new
-    var newTokenRequest = util.promisify(requestNewToken);
-    newAuthData = await requestNewToken(req.query.refresh_token);
+  if (timePassed > 60) {
+    authData = await requestNewToken(req.query.refresh_token);
   } else {
-    // token is valid
-    newAuthData = {access_token: req.query.access_token}
+    authData = {access_token: req.query.access_token};
   }
 
   // do request
-  if (newAuthData) {
+  if (authData) {
     let authOptions = {
       url: 'https://api.spotify.com/v1/me',
       headers: {
-        'Authorization': 'Bearer ' + newAuthData.access_token
+        'Authorization': 'Bearer ' + authData.access_token
       }
     }
 
     request.get(authOptions, (error, response) =>  {
       var newResponse = JSON.parse(response.body)
-      console.log(typeof newResponse)
-      console.log(newResponse)
-      console.log('newAuthData', newAuthData)
+      //console.log(newResponse)
       return res.status(200).send({
         data: newResponse,
-        newAuthData: newAuthData
+        newAuthData: authData
       })
     })
   }
@@ -200,15 +207,47 @@ app.get('/api/v1/getUserData', async (req, res) => {
 });
 
 app.get('/api/v1/getPlayer', async (req, res) => {
+  console.log(' ')
+  console.log(fgRequest, 'Request GET /getPlayer')
+  console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
+  console.log(' ')
 
-})
+  //console.log('req', req.query)
+  var createdAt = parseInt(req.query.createdAt);
+  var timePassed = checkToken(createdAt);
+  var authData = await timePassed > 60 ? requestNewToken(req.query.refresh_token) : {access_token: req.query.access_token};
 
-/*io.listen(process.env.PORT || SOCKET_PORT, () => {
-  console.log(`socket running on port ${process.env.PORT || SOCKET_PORT}`)
-});*/
+  if (authData) {
+    let authOptions = {
+      url: "https://api.spotify.com/v1/me/player",
+      headers: {
+        'Authorization': 'Bearer ' + authData.access_token
+      }
+    }
+    
+    request.get(authOptions, (error, response) => {
+     /* var newResponse = JSON.parse(response.body);
+      console.log(newResponse);*/
+      console.log(response.body)
+      if (response.body) {
+        var newResponse = JSON.parse(response.body)
+        return res.status(200).send({
+          data: newResponse,
+          newAuthData: authData
+        })
+      } else {
+        console.log('spotify not active')
+        return res.status(200).send({
+          data: {},
+          newAuthData: authData
+        })
+      }
+    });
+  }
 
+});
 
-io.on('connection', (client) => {
+io.of('token').on('connection', (client) => {
   console.log(' ')
   console.log(fgRequest, 'io socket -> on connection')
   console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
@@ -266,6 +305,7 @@ var checkToken = (createdAt) => {
 }
 
 var requestNewToken = async (refreshToken) => {
+  console.log('requestNewToken()')
   let authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
