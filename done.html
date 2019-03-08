@@ -3,45 +3,45 @@
 <head>
   <title>Swotify</title>
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100" rel="stylesheet">
   <!-- Compiled and minified CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-
-  <style type="text/css">
-    
-  </style>
+  <link rel="stylesheet" href="/stylesheet/style.css">
 </head>
 <body>
 
-  <div class="container">
-    <div class="col s12">
-      <h1 class="center-align">Swotify API</h1>
-      <h2 class="center-align">done!</h2>
+  <div class="wrapper">
+    
+    <div class="row">
+      <div class="col s12">
+        <h1 class="center-align">Swotify</h1>
+        <p>Log in to your Spotify account to connect it to Swotify.</p>
+      </div>
     </div>
+
+    <div class="row">
+      <a class="waves-effect waves-light btn blue-grey darken-4" href="/login">Log in</a>
+    </div>
+
   </div>
+
+  <footer>
+    <div class="footer-copyright">
+      <div class="container">
+        <div class="row">
+          <div class="col s12">
+            <a class="" href="#!">Available in AppleTV AppStore!</a>
+          </div>
+          <div class="col s12">Developed by RNGSTRM | Powered by React Native</div>
+        </div>
+      </div>
+    </div>
+  </footer>
 
   <!-- Compiled and minified JavaScript -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
-  <script type="text/javascript">
-    function getQueryStringValue (key) {  
-      return decodeURIComponent(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));  
-    }
-
-    var access_token = getQueryStringValue('code');
-
-    // get code from cookie
-    var cookieValue = document.cookie.replace(/(?:(?:^|.*;\s*)swotify_code\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-
-    // send access_token to api
-
-    var xhttp = new XMLHttpRequest();
-    xhttp.open("POST", "http://localhost:7000/callback", true);
-    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhttp.send("code=" + cookieValue + "&access_token=" + access_token);
-
-    // in api, send access_token to app (socket)
-
-  </script>
 
 </body>
 </html>
