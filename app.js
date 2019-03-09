@@ -248,7 +248,12 @@ app.get('/api/v1/getPlayer', async (req, res) => {
 });
 
 app.get('/api/v1/refreshToken', async (req, res) => {
-  authData = await requestNewToken(req.query.refresh_token);
+  console.log(' ')
+  console.log(fgRequest, 'Request GET /refreshToken')
+  console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
+  console.log(' ')
+
+  var authData = await requestNewToken(req.query.refresh_token);
   return res.status(200).send({
     newAuthData: authData
   });
