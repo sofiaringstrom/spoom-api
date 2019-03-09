@@ -247,6 +247,13 @@ app.get('/api/v1/getPlayer', async (req, res) => {
 
 });
 
+app.get('/api/v1/refreshToken', async (req, res) => {
+  authData = await requestNewToken(req.query.refresh_token);
+  return res.status(200).send({
+    newAuthData: authData
+  });
+});
+
 io.of('token').on('connection', (client) => {
   console.log(' ')
   console.log(fgRequest, 'io socket -> on connection')
@@ -285,8 +292,8 @@ io.of('token').on('connection', (client) => {
   });
 });
 
-// empty code queue once a day at midnight
-cron.schedule('0 0 * * *', () => {
+// empty code queue every 30th minute
+cron.schedule('*/30 * * * *', () => {
   console.log(' ')
   console.log(fgCron, 'Running cron job')
   console.log(fgCron, '-------------------------------------------------------------------------------------------------------------------')
