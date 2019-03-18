@@ -1,4 +1,4 @@
-# Swotify API
+# Spoom API
 
 ## Install
 ```

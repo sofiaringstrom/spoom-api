@@ -48,6 +48,7 @@ app.use(express.static(__dirname + '/public'))
    .use(cookieParser());
 
 app.use("/stylesheet",express.static(__dirname + "/stylesheet"));
+app.use("/images",express.static(__dirname + "/images"));
 
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use((req, res, next) => {
@@ -157,9 +158,9 @@ app.get('/callback', (req, res) => {
     var swotifyCode = req.cookies.swotify_code;
     token_requests[swotifyCode] = {'access_token': access_token, 'refresh_token': refresh_token, 'createdAt': createdAt.toString()};
 
-    return res.status(200).send({
-      status: 'ok'
-    });
+    //res.sendFile(path.join(__dirname+'/done.html'));
+
+    return res.status(200).sendFile(path.join(__dirname+'/done.html'));
   }).on('error', (err) => {
     return res.status(200).send({
       status: 'failed'
