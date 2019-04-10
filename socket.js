@@ -1,5 +1,6 @@
 import {
   getPlayerState,
+  getPlayerDevices,
   playTrack,
   setPlayState,
   transferPlayback,
@@ -8,13 +9,18 @@ import {
   previousTrack,
   setVolume
 } from './spotify'
-
+import Bottleneck from "bottleneck"
 const C = {
   CONNECT_ERROR: 'connect_error',
   HAS_SCRUBBED_THRESHOLD: 1500,
   HAS_FINISHED_THRESHOLD: 2000,
   POLL_RATE: 1000
 }
+
+const limiter = new Bottleneck({
+  maxConcurrent: 1,
+  minTime: 3000
+});
 
 const spotifyConnectWs = socket => {
   socket.use((packet, next) => {
@@ -64,6 +70,18 @@ const spotifyConnectWs = socket => {
           console.log('no active device')
           return
         }
+
+        getPlayerDevices(socket.accessToken)
+        .then(playerDevices => {
+          if (!socket.playerDevices) {
+            console.log('initial_devices', playerDevices.devices)
+            socket.emit('initial_devices', playerDevices.devices)
+            socket.playerDevices = playerDevices
+            return
+          }
+        })
+        .catch(handleError)
+
         if (!socket.hasSentInitialState) {
           socket.emit('initial_state', playerState)
           socket.playerState = playerState
@@ -73,6 +91,21 @@ const spotifyConnectWs = socket => {
 
         // reset poll rate if no errors were encountered
         socket.pollRate = C.POLL_RATE
+
+        limiter.schedule(() => getPlayerDevices(socket.accessToken)
+        .then(playerDevices => {
+          console.log('socket.playerDevices', socket.playerDevices)
+          if (!socket.playerDevices) {
+            console.log('initial_devices', playerDevices.devices)
+            socket.emit('initial_devices', playerDevices.devices)
+            socket.playerDevices = playerDevices
+          } else if (playerDevices.length !== socket.playerDevices.length) {
+            console.log('devices_changed', playerDevices.devices)
+            socket.emit('devices_changed', playerDevices)
+            socket.playerDevices = playerDevices
+          }
+        })
+        .catch(handleError))
 
         if (playerState.item.id !== socket.playerState.item.id) {
           // track has changed

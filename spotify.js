@@ -28,6 +28,32 @@ export const getPlayerState = accessToken => {
   })
 }
 
+// get device list
+export const getPlayerDevices = accessToken => {
+  return new Promise((resolve, reject) => {
+    fetch(`${API_URL}/me/player/devices`, {
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      if (response.status === 202) {
+        return resolve({})
+      }
+      return response
+    })
+    .then(r => r.json())
+    .then(response => {
+      if (response.error) {
+        return reject(response.error.message)
+      }
+      resolve(response)
+    })
+    .catch(reject)
+  })
+}
+
 export const playTrack = (accessToken, { id, ...args }) => {
   return new Promise((resolve, reject) => {
     const body = {}
