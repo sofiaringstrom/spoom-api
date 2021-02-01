@@ -10,18 +10,17 @@ import {
   setVolume
 } from './spotify'
 import Bottleneck from "bottleneck"
+
 const C = {
   CONNECT_ERROR: 'connect_error',
   HAS_SCRUBBED_THRESHOLD: 1500,
   HAS_FINISHED_THRESHOLD: 2000,
   POLL_RATE: 1000
 }
-
 const limiter = new Bottleneck({
   maxConcurrent: 1,
   minTime: 3000
-});
-
+})
 const spotifyConnectWs = socket => {
   socket.use((packet, next) => {
     if (packet[0] !== 'initiate') {

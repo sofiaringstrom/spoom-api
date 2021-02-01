@@ -1,5 +1,16 @@
 # Spoom API
 
+Talks to the [Spotify Web API](https://developer.spotify.com/documentation/web-api/) to get and set the state in ones Spotify playback.
+Currently all we can do is take control over an active playback session on, for example, a computer or phone.
+
+## Hosting
+http://spoom-api.herokuapp.com/
+
+## Using
+* [express.js](https://expressjs.com/)
+* [socket.io](https://github.com/socketio/socket.io)
+* [Heroku](https://www.heroku.com/)
+
 ## Install
 ```
 npm install
@@ -18,9 +29,5 @@ npm run start
 ## Deploy
 Push to master, deploy on Heroku
 
-
 ## Notes
-
-Använd för att app ska lyssna efter att koden är ok från api: https://medium.com/dailyjs/combining-react-with-socket-io-for-real-time-goodness-d26168429a34
-
-![note](https://i.imgur.com/UBLLkWy.png?1)
+Project needs cleanup and refactoring. 

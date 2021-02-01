@@ -1,54 +1,52 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import querystring from 'querystring';
-import cookieParser from 'cookie-parser';
-import request from 'request';
-import util from 'util';
-import cron from 'node-cron';
-import socketio from 'socket.io';
-import connectSocket from './socket';
+import express from 'express'
+import bodyParser from 'body-parser'
+import cors from 'cors'
+import querystring from 'querystring'
+import cookieParser from 'cookie-parser'
+import request from 'request'
+import util from 'util'
+import cron from 'node-cron'
+import socketio from 'socket.io'
+import connectSocket from './socket'
 
-require('dotenv').config();
+require('dotenv').config()
 
-var token_requests = {};
+var token_requests = {}
 
-const fgOK = '\x1b[36m%s\x1b[0m';
-const fgWarning = '\x1b[33m%s\x1b[0m';
-const fgError = '\x1b[31m%s\x1b[0m';
-const fgFunction = '\x1b[34m%s\x1b[0m';
-const fgRequest = '\x1b[37m%s\x1b[0m';
-const fgCron = '\x1b[35m%s\x1b[0m';
+const fgOK = '\x1b[36m%s\x1b[0m'
+const fgWarning = '\x1b[33m%s\x1b[0m'
+const fgError = '\x1b[31m%s\x1b[0m'
+const fgFunction = '\x1b[34m%s\x1b[0m'
+const fgRequest = '\x1b[37m%s\x1b[0m'
+const fgCron = '\x1b[35m%s\x1b[0m'
 
-var stateKey = 'spotify_auth_state';
-
-const app = express();
-const PORT = process.env.PORT;
-const SOCKET_PORT = process.env.SOCKET_PORT;
-const path = require('path');
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
-const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const SPOTIFY_REDIRECT_URL = process.env.SPOTIFY_REDIRECT_URL;
-const FRONTEND_URI = process.env.FRONTEND_URI;
-
-var http = require('http').Server(app);
-
-http.listen(PORT, () => {
-  console.log(`server running on port ${PORT}`)
-});
-
-const io = require('socket.io')(http);
+const app = express()
+const path = require('path')
+const PORT = process.env.PORT
+const SOCKET_PORT = process.env.SOCKET_PORT
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET
+const SPOTIFY_REDIRECT_URL = process.env.SPOTIFY_REDIRECT_URL
+const FRONTEND_URI = process.env.FRONTEND_URI
+const io = require('socket.io')(http)
 /*const io = socketio(http);
 io.on('connection', connectSocket);*/
 
-io.of('connect').on('connection', connectSocket);
+var http = require('http').Server(app)
+var stateKey = 'spotify_auth_state'
+
+http.listen(PORT, () => {
+  console.log(`server running on port ${PORT}`)
+})
+
+io.of('connect').on('connection', connectSocket)
 
 app.use(express.static(__dirname + '/public'))
    .use(cors())
-   .use(cookieParser());
+   .use(cookieParser())
 
-app.use("/stylesheet",express.static(__dirname + "/stylesheet"));
-app.use("/images",express.static(__dirname + "/images"));
+app.use("/stylesheet",express.static(__dirname + "/stylesheet"))
+app.use("/images",express.static(__dirname + "/images"))
 
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use((req, res, next) => {
@@ -56,7 +54,7 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
   next()
 })
-app.use(bodyParser.json());
+app.use(bodyParser.json())
 
 app.get('/', (req,res) => {
   console.log(' ')
@@ -76,11 +74,11 @@ app.get('/', (req,res) => {
 
     // check if code is valid
     if (token_requests[req.query.code]) {
-      res.sendFile(path.join(__dirname+'/auth.html'));
+      res.sendFile(path.join(__dirname+'/auth.html'))
     } else {
       // code is not valid
         
-      res.sendFile(path.join(__dirname+'/auth.html'));
+      res.sendFile(path.join(__dirname+'/auth.html'))
 
       /*return res.status(200).send({
         status: 'failed',
@@ -89,10 +87,10 @@ app.get('/', (req,res) => {
     }
   } else {
     // code is not present, pls enter
-    res.sendFile(path.join(__dirname+'/enter-code.html'));
+    res.sendFile(path.join(__dirname+'/enter-code.html'))
   }
 
-});
+})
 
 app.get('/login', (req, res) => {
   console.log(' ')
@@ -100,11 +98,11 @@ app.get('/login', (req, res) => {
   console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
   console.log(' ')
 
-  var state = generateRandomString(16);
-  res.cookie(stateKey, state);
+  var state = generateRandomString(16)
+  res.cookie(stateKey, state)
 
   // your application requests authorization
-  var scope = 'user-read-private playlist-read-private user-read-email user-read-playback-state user-modify-playback-state user-read-currently-playing user-modify-playback-state';
+  var scope = 'user-read-private playlist-read-private user-read-email user-read-playback-state user-modify-playback-state user-read-currently-playing user-modify-playback-state'
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       client_id: SPOTIFY_CLIENT_ID,
@@ -112,12 +110,12 @@ app.get('/login', (req, res) => {
       scope: scope,
       redirect_uri: SPOTIFY_REDIRECT_URL,
       state: state
-    }));
-});
+    }))
+})
 
 app.get('/done',function(req,res) {
-  res.sendFile(path.join(__dirname+'/done.html'));
-});
+  res.sendFile(path.join(__dirname+'/done.html'))
+})
 
 app.get('/callback', (req, res) => {
   console.log(' ')
@@ -146,28 +144,28 @@ app.get('/callback', (req, res) => {
   }
   request.post(authOptions, function(error, response, body) {
     console.log('body', body)
-    var access_token = body.access_token;
-    var refresh_token = body.refresh_token;
+    var access_token = body.access_token
+    var refresh_token = body.refresh_token
     let uri = process.env.FRONTEND_URI || 'http://localhost:7000'
 
     // save createdAt to check if token is valid later
-    var createdAt = Date.now();
+    var createdAt = Date.now()
 
     // store tokens in app
     // then send tokens to api when requesting data from spotify
-    var swotifyCode = req.cookies.swotify_code;
-    token_requests[swotifyCode] = {'access_token': access_token, 'refresh_token': refresh_token, 'createdAt': createdAt.toString()};
+    var swotifyCode = req.cookies.swotify_code
+    token_requests[swotifyCode] = {'access_token': access_token, 'refresh_token': refresh_token, 'createdAt': createdAt.toString()}
 
     //res.sendFile(path.join(__dirname+'/done.html'));
 
-    return res.status(200).sendFile(path.join(__dirname+'/done.html'));
+    return res.status(200).sendFile(path.join(__dirname+'/done.html'))
   }).on('error', (err) => {
     return res.status(200).send({
       status: 'failed'
-    });
-  });
+    })
+  })
 
-});
+})
 
 app.get('/api/v1/getUserData', async (req, res) => {
   console.log(' ')
@@ -176,14 +174,14 @@ app.get('/api/v1/getUserData', async (req, res) => {
   console.log(' ')
 
   // get access token, refresh token and datetime creaated
-  var createdAt = parseInt(req.query.createdAt);
-  var timePassed = checkToken(createdAt);
-  var authData;
+  var createdAt = parseInt(req.query.createdAt)
+  var timePassed = checkToken(createdAt)
+  var authData
 
   if (timePassed > 60) {
-    authData = await requestNewToken(req.query.refresh_token);
+    authData = await requestNewToken(req.query.refresh_token)
   } else {
-    authData = {access_token: req.query.access_token};
+    authData = {access_token: req.query.access_token}
   }
 
   // do request
@@ -205,7 +203,7 @@ app.get('/api/v1/getUserData', async (req, res) => {
     })
   }
 
-});
+})
 
 app.get('/api/v1/getPlayer', async (req, res) => {
   console.log(' ')
@@ -214,9 +212,9 @@ app.get('/api/v1/getPlayer', async (req, res) => {
   console.log(' ')
 
   //console.log('req', req.query)
-  var createdAt = parseInt(req.query.createdAt);
-  var timePassed = checkToken(createdAt);
-  var authData = await timePassed > 60 ? requestNewToken(req.query.refresh_token) : {access_token: req.query.access_token};
+  var createdAt = parseInt(req.query.createdAt)
+  var timePassed = checkToken(createdAt)
+  var authData = await timePassed > 60 ? requestNewToken(req.query.refresh_token) : {access_token: req.query.access_token}
 
   if (authData) {
     let authOptions = {
@@ -243,10 +241,10 @@ app.get('/api/v1/getPlayer', async (req, res) => {
           newAuthData: authData
         })
       }
-    });
+    })
   }
 
-});
+})
 
 app.get('/api/v1/refreshToken', async (req, res) => {
   console.log(' ')
@@ -254,11 +252,11 @@ app.get('/api/v1/refreshToken', async (req, res) => {
   console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
   console.log(' ')
 
-  var authData = await requestNewToken(req.query.refresh_token);
+  var authData = await requestNewToken(req.query.refresh_token)
   return res.status(200).send({
     newAuthData: authData
-  });
-});
+  })
+})
 
 io.of('token').on('connection', (client) => {
   console.log(' ')
@@ -274,9 +272,9 @@ io.of('token').on('connection', (client) => {
     console.log(fgRequest, '-------------------------------------------------------------------------------------------------------------------')
     console.log(' ')
 
-    console.log('client is subscribing to code ', code);
+    console.log('client is subscribing to code ', code)
 
-    token_requests[code] = {};
+    token_requests[code] = {}
 
     var socketInterval = setInterval(() => {
       console.log('socket connection')
@@ -285,18 +283,18 @@ io.of('token').on('connection', (client) => {
       if (Object.keys(token_requests[code]).length) {
 
         console.log('token valid')
-        clearInterval(socketInterval);
-        var authData = token_requests[code];
-        delete token_requests[code]; 
-        client.emit('authData', authData);
+        clearInterval(socketInterval)
+        var authData = token_requests[code]
+        delete token_requests[code]
+        client.emit('authData', authData)
 
       } else {
         console.log('no valid token found')
       }
-    }, 1000);
+    }, 1000)
 
-  });
-});
+  })
+})
 
 // empty code queue every 30th minute
 cron.schedule('*/30 * * * *', () => {
@@ -304,17 +302,17 @@ cron.schedule('*/30 * * * *', () => {
   console.log(fgCron, 'Running cron job')
   console.log(fgCron, '-------------------------------------------------------------------------------------------------------------------')
   console.log(' ')
-  token_requests = {};
-});
+  token_requests = {}
+})
 
 var checkToken = (createdAt) => {
   console.log(createdAt)
-  var now = Date.now();
+  var now = Date.now()
 
-  var diff = now - createdAt;
-  var timePassed = diff/60/1000;
+  var diff = now - createdAt
+  var timePassed = diff/60/1000
   console.log('timePassed', timePassed)
-  return timePassed;
+  return timePassed
 }
 
 var requestNewToken = async (refreshToken) => {
@@ -333,12 +331,12 @@ var requestNewToken = async (refreshToken) => {
     json: true
   }
 
-  var tokenRequest = util.promisify(request.post);
-  var newToken = await tokenRequest(authOptions).catch((err) => {throw err});
-  var createdAt = Date.now();
+  var tokenRequest = util.promisify(request.post)
+  var newToken = await tokenRequest(authOptions).catch((err) => {throw err})
+  var createdAt = Date.now()
 
   if (newToken) {
-    return {access_token: newToken.body['access_token'], createdAt: createdAt.toString()};
+    return {access_token: newToken.body['access_token'], createdAt: createdAt.toString()}
   }
 
 }
@@ -349,11 +347,11 @@ var requestNewToken = async (refreshToken) => {
  * @return {string} The generated string
  */
 var generateRandomString = (length) => {
-  var text = '';
-  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var text = ''
+  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
   for (var i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
+    text += possible.charAt(Math.floor(Math.random() * possible.length))
   }
-  return text;
-};
+  return text
+}

@@ -24,11 +24,9 @@
     "cors": "^2.8.5",
     "dotenv": "^6.1.0",
     "express": "^4.16.4",
-    "firebase-admin": "^6.3.0",
     "newrelic": "^5.2.1",
     "node-cron": "^2.0.3",
     "socket.io": "^2.2.0",
-    "twilio": "^3.24.0"
   },
   "devDependencies": {
     "nodemon": "^1.18.6"
